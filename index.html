@@ -229,6 +229,22 @@ button:disabled{opacity:.45;cursor:default}
     if (el) el.style.display = "block";
   }
 
+  // ---------- keep the screen awake during a game ----------
+  var wakeLock = null;
+  function keepAwake() {
+    if (!game || game.phase === "won" || !("wakeLock" in navigator) || wakeLock || document.visibilityState !== "visible") return;
+    navigator.wakeLock.request("screen").then(function (lock) {
+      wakeLock = lock;
+      lock.addEventListener("release", function () { wakeLock = null; });
+    }).catch(function () { /* e.g. low battery mode: the screen may lock as usual */ });
+  }
+  function allowSleep() {
+    if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+  }
+  // iOS releases the lock when the app is left; take it again on return
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") keepAwake(); });
+  document.addEventListener("click", keepAwake, true);
+
   // ---------- game flow ----------
   function startGame() {
     var names = setup.players.filter(function (n) { return n.trim(); });
@@ -294,7 +310,7 @@ button:disabled{opacity:.45;cursor:default}
 
   function nextTurn() {
     stopMusic();
-    if (game.winner !== null) { game.phase = "won"; saveAll(); render(); return; }
+    if (game.winner !== null) { game.phase = "won"; allowSleep(); saveAll(); render(); return; }
     game.turn = (game.turn + 1) % game.players.length;
     game.phase = "ready"; game.current = null; game.slot = null; game.correct = null; game.newCard = null;
     saveAll(); render();
@@ -302,7 +318,7 @@ button:disabled{opacity:.45;cursor:default}
 
   function endGame() {
     if (!confirm("Avsluta spelet? Spelade låtar kommer inte tillbaka.")) return;
-    stopMusic(); game = null; saveAll(); render();
+    stopMusic(); allowSleep(); game = null; saveAll(); render();
   }
 
   // ---------- rendering ----------
@@ -478,7 +494,7 @@ button:disabled{opacity:.45;cursor:default}
 
   function bindCommon() {
     bindChips();
-    on("again", "click", function () { game = null; saveAll(); render(); });
+    on("again", "click", function () { allowSleep(); game = null; saveAll(); render(); });
   }
 
   function bindGame() {
