@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HemmaHits">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>HemmaHits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#E9EFF6; --surface:#FFFFFF; --ink:#18213A; --muted:#5B6680;
+  --accent:#2F5BEA; --accent-ink:#FFFFFF; --sun:#FFC93C; --ok:#1F9D63; --bad:#E5484D;
+  --line:#C9D3E3;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#121A2B; --surface:#1D2740; --ink:#EEF2FA; --muted:#9AA6C0;
+    --accent:#6F8FFF; --accent-ink:#0E1424; --sun:#FFD15C; --ok:#3CC488; --bad:#FF6B6F;
+    --line:#2E3A57;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+main{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+h1{font-weight:800;font-size:44px;line-height:1;letter-spacing:-0.03em;margin:12px 0 4px}
+h2{font-weight:800;font-size:28px;line-height:1.1;letter-spacing:-0.02em;margin:0 0 8px}
+p{margin:0 0 12px}
+.muted{color:var(--muted)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:14px;padding:14px 18px;font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);width:100%;font-size:20px;padding:18px}
+.secondary{background:var(--surface);border:2px solid var(--line)}
+.small{padding:8px 12px;font-size:15px;border-radius:10px}
+.row{display:flex;gap:8px;align-items:center}
+.stack>*+*{margin-top:12px}
+.panel{background:var(--surface);border-radius:18px;padding:16px}
+input[type=text]{width:100%;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg)}
+select{padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg)}
+label{font-weight:600}
+.players li{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.players{list-style:none;margin:0;padding:0}
+.icon-btn{background:none;padding:6px 10px;color:var(--muted);font-size:22px;line-height:1}
+
+/* scoreboard */
+.scores{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;margin:0 -16px;padding-left:16px;padding-right:16px}
+.chip{flex:0 0 auto;background:var(--surface);border-radius:999px;padding:6px 12px;font-size:15px;border:2px solid transparent;white-space:nowrap}
+.chip.on{border-color:var(--accent)}
+.chip b{font-weight:800}
+
+.turn{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:8px 0 12px}
+.turn h2{margin:0}
+.tokens{display:flex;align-items:center;gap:4px;font-size:15px}
+.tokens button{padding:4px 10px;border-radius:8px;background:var(--surface)}
+
+/* now playing */
+.player{position:relative;border-radius:22px;background:var(--accent);color:var(--accent-ink);padding:22px;overflow:hidden;min-height:150px}
+.player .cover{position:relative;z-index:2}
+.player .bigtitle{font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1.05}
+button:disabled{opacity:.45;cursor:default}
+.player .cover .row{margin-top:14px;flex-wrap:wrap}
+.player .cover button,.player .cover a{background:rgba(255,255,255,.18);color:inherit;padding:10px 14px;border-radius:12px;font-weight:600;text-decoration:none;font-size:15px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .player .cover button,:root:not([data-theme="light"]) .player .cover a{background:rgba(14,20,36,.18)}}
+.eq{display:inline-flex;gap:4px;align-items:flex-end;height:26px;margin-bottom:10px}
+.eq i{display:block;width:6px;background:currentColor;border-radius:3px;animation:eq 1s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.4s}.eq i:nth-child(4){animation-delay:.1s}
+.eq.paused i{animation-play-state:paused}
+@keyframes eq{0%,100%{height:6px}50%{height:26px}}
+@media (prefers-reduced-motion: reduce){.eq i{animation:none;height:16px}}
+
+/* timeline */
+.timeline{list-style:none;margin:16px 0 0;padding:0}
+.card{display:flex;gap:14px;align-items:baseline;background:var(--surface);border-radius:14px;padding:12px 14px}
+.card .y{font-weight:800;font-size:30px;letter-spacing:-0.03em;min-width:72px;font-variant-numeric:tabular-nums}
+.card .t{font-size:15px;line-height:1.3}
+.card .t span{display:block;color:var(--muted)}
+.card.new{outline:3px solid var(--ok)}
+.slot{display:block;width:100%;margin:6px 0;padding:8px;border:2px dashed var(--line);background:transparent;border-radius:12px;color:var(--muted);font-weight:600;font-size:15px}
+.slot.sel{border-style:solid;border-color:var(--accent);background:var(--accent);color:var(--accent-ink);padding:14px}
+.slot:disabled{opacity:.35}
+
+/* reveal */
+.reveal{border-radius:22px;padding:22px;background:var(--surface);border:3px solid var(--line)}
+.reveal.ok{border-color:var(--ok)}
+.reveal.bad{border-color:var(--bad)}
+.reveal .year{font-size:84px;font-weight:800;letter-spacing:-0.05em;line-height:.9;font-variant-numeric:tabular-nums}
+.reveal .verdict{font-weight:800;font-size:20px;margin-top:8px}
+.reveal.ok .verdict{color:var(--ok)}
+.reveal.bad .verdict{color:var(--bad)}
+@media (prefers-reduced-motion: no-preference){.reveal{animation:pop .35s ease-out}}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+
+/* countdown overlay */
+#countdown{position:fixed;inset:0;z-index:10;background:var(--accent);color:var(--accent-ink);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#countdown .n{font-size:160px;font-weight:800;line-height:1}
+.winner{text-align:center;padding:40px 0}
+.winner .crown{font-size:72px}
+.footer-actions{display:flex;justify-content:space-between;margin-top:28px}
+.linkish{background:none;padding:6px 0;color:var(--muted);text-decoration:underline;font-weight:400;font-size:15px}
+.chip{cursor:pointer;font:inherit;color:inherit;font-weight:400}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:16px}
+.yr{background:var(--surface);border-radius:10px;padding:8px 10px;font-weight:800;font-size:22px;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.ins{width:40px;height:40px;border:2px dashed var(--line);border-radius:10px;background:transparent;padding:0;color:var(--muted);font-size:20px;font-weight:600}
+.ins.sel{width:auto;padding:0 14px;background:var(--accent);color:var(--accent-ink);border:2px solid var(--accent);font-size:17px}
+.toggle{margin-top:10px}
+#sheet{position:fixed;inset:0;z-index:20;display:none;background:rgba(10,15,30,.45);align-items:flex-end;justify-content:center}
+#sheet .inner{background:var(--bg);width:100%;max-width:560px;max-height:85%;overflow-y:auto;border-radius:22px 22px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.notice{background:var(--sun);color:#18213A;border-radius:12px;padding:10px 14px;font-size:15px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div id="sheet" role="dialog" aria-modal="true"><div class="inner" id="sheet-inner"></div></div>
+<div id="countdown" aria-live="assertive"><div class="n" id="cd-n">3</div><p id="cd-msg">Vänd telefonen med skärmen nedåt</p></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY_GAME = "hh.game.v1";
+  var KEY_PLAYED = "hh.played.v1";
+  var KEY_SETUP = "hh.setup.v1";
+
+  var songs = [];          // loaded from songs.json
+  var byId = {};
+  var game = null;         // current game state
+  var setup = { players: [], target: 10, mode: "embed" };
+  var played = [];         // song ids already used in any game
+  var notice = "";
+  var yt = null, ytReady = false, ytState = -1, ytStartTimer = null;
+
+  // ---------- storage ----------
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+  function saveAll() { save(KEY_GAME, game); save(KEY_PLAYED, played); save(KEY_SETUP, setup); }
+
+  // ---------- helpers ----------
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function inUse() {
+    var s = {};
+    if (game) game.players.forEach(function (p) { p.timeline.forEach(function (id) { s[id] = true; }); });
+    return s;
+  }
+  function drawSong() {
+    var used = {}; played.forEach(function (id) { used[id] = true; });
+    var free = songs.filter(function (s) { return !used[s.id]; });
+    if (free.length === 0) {
+      // every song has been heard: start over, but keep songs lying on the table
+      var keep = inUse();
+      played = Object.keys(keep).map(Number);
+      free = songs.filter(function (s) { return !keep[s.id]; });
+      notice = "Alla låtar har spelats. Listan börjar om från början.";
+    }
+    var s = free[Math.floor(Math.random() * free.length)];
+    played.push(s.id);
+    return s.id;
+  }
+  function sortedTimeline(p) {
+    return p.timeline.slice().sort(function (a, b) { return byId[a].year - byId[b].year; });
+  }
+  function remaining() {
+    var used = {}; played.forEach(function (id) { used[id] = true; });
+    return songs.filter(function (s) { return !used[s.id]; }).length;
+  }
+  function ytLink(id) { return "https://music.youtube.com/watch?v=" + encodeURIComponent(byId[id].videoId); }
+
+  // ---------- YouTube embedded player ----------
+  function loadYouTubeApi() {
+    if (window.YT || document.getElementById("yt-api")) return;
+    var s = document.createElement("script");
+    s.id = "yt-api"; s.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(s);
+  }
+  window.onYouTubeIframeAPIReady = function () {
+    var holder = document.createElement("div");
+    holder.id = "yt-holder";
+    document.getElementById("yt-park").appendChild(holder);
+    yt = new YT.Player("yt-holder", {
+      width: 200, height: 200,
+      playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, fs: 0, iv_load_policy: 3 },
+      events: {
+        onReady: function () { ytReady = true; },
+        onStateChange: function (e) { ytState = e.data; updateEq(); },
+        onError: function () { ytState = -2; showPlayProblem(); }
+      }
+    });
+  }
+  function stopMusic() {
+    if (yt && ytReady) { try { yt.stopVideo(); } catch (e) {} }
+    ytState = -1;
+  }
+  function updateEq() {
+    if (!game) return;
+    var eq = document.getElementById("eq");
+    if (eq) eq.className = "eq" + (ytState === 1 || game.mode === "app" ? "" : " paused");
+    var pb = document.getElementById("btn-pause");
+    if (pb) pb.textContent = ytState === 1 ? "Pausa" : "Spela";
+  }
+  function showPlayProblem() {
+    var el = document.getElementById("play-problem");
+    if (el) el.style.display = "block";
+  }
+
+  // ---------- game flow ----------
+  function startGame() {
+    var names = setup.players.filter(function (n) { return n.trim(); });
+    if (names.length < 1 || songs.length < names.length + 5) return;
+    game = {
+      players: names.map(function (n) { return { name: n.trim(), timeline: [], tokens: 2 }; }),
+      turn: 0, target: setup.target, mode: setup.mode,
+      phase: "ready", current: null, slot: null, correct: null, newCard: null, winner: null
+    };
+    game.players.forEach(function (p) { p.timeline.push(drawSong()); });
+    game.turn = Math.floor(Math.random() * game.players.length);
+    saveAll(); render();
+  }
+
+  function playSong() {
+    game.current = drawSong();
+    game.slot = null; game.phase = "playing"; game.newCard = null;
+    saveAll();
+    if (game.mode === "embed") {
+      render();
+      if (yt && ytReady) {
+        ytState = -1;
+        yt.loadVideoById(byId[game.current].videoId);
+        clearTimeout(ytStartTimer);
+        ytStartTimer = setTimeout(function () { if (ytState !== 1 && ytState !== 3) showPlayProblem(); }, 4000);
+      } else {
+        showPlayProblem();
+      }
+    } else {
+      countdownThenOpen();
+    }
+  }
+
+  function countdownThenOpen() {
+    render();
+    var box = document.getElementById("countdown"), n = document.getElementById("cd-n");
+    var i = 3; box.style.display = "flex"; n.textContent = i;
+    var t = setInterval(function () {
+      i--;
+      if (i > 0) { n.textContent = i; return; }
+      clearInterval(t); box.style.display = "none";
+      window.location.href = ytLink(game.current);
+    }, 1000);
+  }
+
+  function skipSong() {
+    // the song stays marked as played, so it never comes back
+    stopMusic(); game.phase = "ready"; game.current = null; game.slot = null;
+    saveAll(); playSong();
+  }
+
+  function reveal() {
+    if (game.slot === null) return;
+    var p = game.players[game.turn], tl = sortedTimeline(p), y = byId[game.current].year;
+    var prev = game.slot > 0 ? byId[tl[game.slot - 1]].year : -Infinity;
+    var next = game.slot < tl.length ? byId[tl[game.slot]].year : Infinity;
+    game.correct = prev <= y && y <= next;
+    if (game.correct) { p.timeline.push(game.current); game.newCard = game.current; }
+    game.phase = "revealed";
+    if (p.timeline.length >= game.target) game.winner = game.turn;
+    saveAll(); render();
+  }
+
+  function nextTurn() {
+    stopMusic();
+    if (game.winner !== null) { game.phase = "won"; saveAll(); render(); return; }
+    game.turn = (game.turn + 1) % game.players.length;
+    game.phase = "ready"; game.current = null; game.slot = null; game.correct = null; game.newCard = null;
+    saveAll(); render();
+  }
+
+  function endGame() {
+    if (!confirm("Avsluta spelet? Spelade låtar kommer inte tillbaka.")) return;
+    stopMusic(); game = null; saveAll(); render();
+  }
+
+  // ---------- rendering ----------
+  function render() {
+    var app = document.getElementById("app");
+    if (!songs.length) { app.innerHTML = renderMissing(); return; }
+    if (!game) { app.innerHTML = renderSetup(); bindSetup(); return; }
+    if (game.phase === "won") { app.innerHTML = renderWinner(); bindCommon(); return; }
+    app.innerHTML = renderGame(); bindGame();
+    updateEq();
+  }
+
+  function renderMissing() {
+    return '<h1>HemmaHits</h1><div class="panel"><p>Hittar ingen låtlista.</p>' +
+      '<p class="muted">Lägg filen songs.json i samma mapp som den här sidan och ladda om.</p></div>';
+  }
+
+  function renderSetup() {
+    var list = setup.players.map(function (n, i) {
+      return '<li><span>' + esc(n) + '</span><button class="icon-btn" data-del="' + i + '" aria-label="Ta bort ' + esc(n) + '">×</button></li>';
+    }).join("");
+    var targets = [5, 7, 10, 12, 15].map(function (t) {
+      return '<option value="' + t + '"' + (t === setup.target ? " selected" : "") + ">" + t + " kort</option>";
+    }).join("");
+    return '<h1>HemmaHits</h1><p class="muted">' + songs.length + " låtar, " + remaining() + " ospelade.</p>" +
+      '<div class="panel stack">' +
+        '<h2>Spelare och lag</h2>' +
+        '<ul class="players">' + (list || '<li class="muted">Lägg till minst en spelare eller ett lag.</li>') + "</ul>" +
+        '<div class="row"><input type="text" id="new-name" placeholder="Namn, t.ex. Mamma &amp; Pappa" autocomplete="off">' +
+        '<button class="secondary" id="add">Lägg till</button></div>' +
+      "</div>" +
+      '<div class="panel stack" style="margin-top:12px">' +
+        '<div class="row" style="justify-content:space-between"><label for="target">Vinner vid</label><select id="target">' + targets + "</select></div>" +
+        '<div class="row" style="justify-content:space-between"><label for="mode">Uppspelning</label><select id="mode">' +
+          '<option value="embed"' + (setup.mode === "embed" ? " selected" : "") + ">I sidan</option>" +
+          '<option value="app"' + (setup.mode === "app" ? " selected" : "") + ">YouTube Music-appen</option>" +
+        "</select></div>" +
+        '<p class="muted" style="font-size:15px;margin:0">I sidan: musiken spelas här och titeln syns aldrig. YouTube Music-appen: telefonen vänds nedåt och låten öppnas i appen, där titeln syns.</p>' +
+      "</div>" +
+      '<div style="margin-top:16px"><button class="primary" id="start"' + (setup.players.length ? "" : " disabled") + ">Starta spelet</button></div>" +
+      '<div class="footer-actions"><button class="linkish" id="reset-played">Glöm vilka låtar som spelats</button></div>';
+  }
+
+  function renderScores() {
+    return '<div class="scores">' + game.players.map(function (p, i) {
+      return '<button class="chip' + (i === game.turn ? " on" : "") + '" data-view="' + i + '" aria-label="Visa tidslinjen för ' + esc(p.name) + '">' + esc(p.name) + " <b>" + p.timeline.length + "</b></button>";
+    }).join("") + "</div>";
+  }
+
+  function renderGame() {
+    var p = game.players[game.turn];
+    var html = renderScores();
+    if (notice) { html += '<div class="notice">' + esc(notice) + "</div>"; notice = ""; }
+    html += '<div class="turn"><div><p class="muted" style="margin:0">Din tur</p><h2>' + esc(p.name) + "</h2></div>" +
+      '<div class="tokens"><span>Poletter</span><button data-tok="-1" aria-label="En polett mindre">−</button><b>' + p.tokens +
+      '</b><button data-tok="1" aria-label="En polett till">+</button></div></div>';
+
+    if (game.phase === "ready") {
+      html += '<button class="primary" id="play">Spela en låt</button>';
+    } else if (game.phase === "playing") {
+      html += '<div class="player"><div class="cover">' +
+        '<div class="eq" id="eq"><i></i><i></i><i></i><i></i></div>' +
+        '<div class="bigtitle">När kom den här?</div>' +
+        '<div class="row">' +
+          (game.mode === "embed" ? '<button id="btn-pause">Pausa</button>' : "") +
+          '<a href="' + ytLink(game.current) + '" id="open-app">' + (game.mode === "embed" ? "Öppna i YouTube Music" : "Öppna låten igen") + "</a>" +
+          '<button id="skip">Vi har haft den</button>' +
+        "</div>" +
+        '<p id="play-problem" style="display:none;margin:12px 0 0;font-size:15px">Låten startar inte här. Öppna den i YouTube Music i stället, eller tryck Vi har haft den för en ny låt.</p>' +
+      "</div></div>" +
+      '<p class="muted" style="margin:14px 0 0">Välj var låten hör hemma på tidslinjen.</p>';
+    } else if (game.phase === "revealed") {
+      var s = byId[game.current];
+      html += '<div class="reveal ' + (game.correct ? "ok" : "bad") + '">' +
+        '<div class="year">' + s.year + "</div>" +
+        '<p style="margin:10px 0 0;font-size:20px;font-weight:600">' + esc(s.title) + '</p><p class="muted" style="margin:0">' + esc(s.artist) + "</p>" +
+        '<div class="verdict">' + (game.correct ? "Rätt! Kortet läggs på tidslinjen." : "Fel plats. Kortet åker ut.") + "</div></div>" +
+        '<div style="margin-top:12px"><button class="primary" id="next">' + (game.winner !== null ? "Se vinnaren" : "Nästa spelare") + "</button></div>";
+    }
+
+    html += renderTimeline(p);
+    if (game.phase === "playing") html += '<div style="margin-top:12px"><button class="primary" id="reveal"' + (game.slot === null ? " disabled" : "") + ">Visa svaret</button></div>";
+    html += '<div class="footer-actions"><span class="muted" style="font-size:15px">Först till ' + game.target + " kort</span>" +
+      '<button class="linkish" id="end">Avsluta spelet</button></div>';
+    return html;
+  }
+
+  function renderFlow(p) {
+    var tl = sortedTimeline(p);
+    function ins(i) {
+      var sel = game.slot === i;
+      var label = i === 0 ? "före " + byId[tl[0]].year : (i === tl.length ? "efter " + byId[tl[i - 1]].year : "mellan " + byId[tl[i - 1]].year + " och " + byId[tl[i]].year);
+      return '<button class="ins' + (sel ? " sel" : "") + '" data-slot="' + i + '" aria-label="Placera ' + label + '">' + (sel ? "här" : "+") + "</button>";
+    }
+    var html = '<div class="flow">';
+    tl.forEach(function (id, i) { html += ins(i) + '<span class="yr">' + byId[id].year + "</span>"; });
+    return html + ins(tl.length) + "</div>";
+  }
+
+  function renderTimeline(p, readOnly) {
+    if (!readOnly && game.phase === "playing" && !setup.showTitles) {
+      return renderFlow(p) + '<button class="linkish toggle" id="titles">Visa titlar</button>';
+    }
+    var tl = sortedTimeline(p), choosing = !readOnly && game.phase === "playing";
+    var html = '<ol class="timeline">';
+    function slot(i) {
+      if (!choosing) return "";
+      var sel = game.slot === i;
+      var label = sel ? "Här!" : (i === 0 ? "Tidigare" : i === tl.length ? "Senare" : "Mellan");
+      return '<li><button class="slot' + (sel ? " sel" : "") + '" data-slot="' + i + '">' + label + "</button></li>";
+    }
+    tl.forEach(function (id, i) {
+      var s = byId[id];
+      html += slot(i);
+      html += '<li style="margin:6px 0"><div class="card' + (id === game.newCard ? " new" : "") + '"><div class="y">' + s.year +
+        '</div><div class="t">' + esc(s.title) + "<span>" + esc(s.artist) + "</span></div></div></li>";
+    });
+    html += slot(tl.length) + "</ol>";
+    if (choosing) html += '<button class="linkish toggle" id="titles">Visa bara årtal</button>';
+    return html;
+  }
+
+  function renderWinner() {
+    var p = game.players[game.winner];
+    return '<div class="winner"><div class="crown" aria-hidden="true">🏆</div><h1>' + esc(p.name) + "</h1>" +
+      '<p class="muted">vann med ' + p.timeline.length + " kort på tidslinjen.</p></div>" +
+      renderScores() +
+      '<button class="primary" id="again">Nytt spel</button>';
+  }
+
+  // ---------- event binding ----------
+  function on(id, ev, fn) { var el = document.getElementById(id); if (el) el.addEventListener(ev, fn); }
+
+  function bindSetup() {
+    function add() {
+      var inp = document.getElementById("new-name"), v = inp.value.trim();
+      if (!v) return;
+      setup.players.push(v); save(KEY_SETUP, setup); render();
+      document.getElementById("new-name").focus();
+    }
+    on("add", "click", add);
+    on("new-name", "keydown", function (e) { if (e.key === "Enter") add(); });
+    document.querySelectorAll("[data-del]").forEach(function (b) {
+      b.addEventListener("click", function () { setup.players.splice(+b.dataset.del, 1); save(KEY_SETUP, setup); render(); });
+    });
+    on("target", "change", function (e) { setup.target = +e.target.value; save(KEY_SETUP, setup); });
+    on("mode", "change", function (e) { setup.mode = e.target.value; save(KEY_SETUP, setup); });
+    on("start", "click", startGame);
+    on("reset-played", "click", function () {
+      if (!confirm("Alla låtar blir ospelade igen och kan komma tillbaka. Fortsätta?")) return;
+      played = []; save(KEY_PLAYED, played); render();
+    });
+  }
+
+  function bindChips() {
+    document.querySelectorAll("[data-view]").forEach(function (b) {
+      b.addEventListener("click", function () { openSheet(+b.dataset.view); });
+    });
+  }
+  function openSheet(i) {
+    var p = game.players[i];
+    var sheet = document.getElementById("sheet");
+    document.getElementById("sheet-inner").innerHTML =
+      '<div class="row" style="justify-content:space-between"><h2 style="margin:0">' + esc(p.name) + "</h2>" +
+      '<button class="secondary small" id="sheet-close">Stäng</button></div>' +
+      '<p class="muted" style="margin:4px 0 0">' + p.timeline.length + " kort, " + p.tokens + (p.tokens === 1 ? " polett" : " poletter") + "</p>" +
+      renderTimeline(p, true);
+    sheet.style.display = "flex";
+    document.getElementById("sheet-close").focus();
+    document.getElementById("sheet-close").addEventListener("click", closeSheet);
+  }
+  function closeSheet() { document.getElementById("sheet").style.display = "none"; }
+
+  function bindCommon() {
+    bindChips();
+    on("again", "click", function () { game = null; saveAll(); render(); });
+  }
+
+  function bindGame() {
+    on("play", "click", playSong);
+    on("skip", "click", skipSong);
+    on("reveal", "click", reveal);
+    on("next", "click", nextTurn);
+    on("end", "click", endGame);
+    on("btn-pause", "click", function () {
+      if (!yt || !ytReady) return;
+      if (ytState === 1) yt.pauseVideo(); else yt.playVideo();
+    });
+    on("titles", "click", function () { setup.showTitles = !setup.showTitles; save(KEY_SETUP, setup); render(); });
+    bindChips();
+    document.querySelectorAll("[data-slot]").forEach(function (b) {
+      b.addEventListener("click", function () { game.slot = +b.dataset.slot; saveAll(); render(); });
+    });
+    document.querySelectorAll("[data-tok]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var p = game.players[game.turn];
+        p.tokens = Math.max(0, p.tokens + (+b.dataset.tok)); saveAll(); render();
+      });
+    });
+  }
+
+  // ---------- start ----------
+  document.getElementById("sheet").addEventListener("click", function (e) { if (e.target.id === "sheet") closeSheet(); });
+  played = load(KEY_PLAYED, []);
+  setup = Object.assign(setup, load(KEY_SETUP, {}));
+  game = load(KEY_GAME, null);
+
+  var park = document.createElement("div");
+  park.id = "yt-park";
+  park.style.cssText = "position:fixed;left:-400px;top:0;width:200px;height:200px;overflow:hidden";
+  document.body.appendChild(park);
+  loadYouTubeApi();
+
+  fetch("songs.json", { cache: "no-cache" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (data) {
+      songs = data.filter(function (s) { return s.videoId && s.year; });
+      songs.forEach(function (s) { byId[s.id] = s; });
+      // drop a saved game whose songs no longer exist (e.g. after a new song list)
+      if (game && !game.players.every(function (p) { return p.timeline.every(function (id) { return byId[id]; }); })) game = null;
+      if (game && game.current && !byId[game.current]) { game.current = null; game.phase = "ready"; }
+      render();
+    })
+    .catch(function () { render(); });
+})();
+</script>
+</body>
+</html>
